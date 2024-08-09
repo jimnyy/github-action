@@ -11,6 +11,33 @@ jobs:
 
     steps:
     - name: get code from github
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Checkout sources
+      uses: actions/checkout@v4
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+
+    - name: Build with Gradle
+      run: |
+        chmod +x ./gradlew
+        ./gradlew build
+
+    - name: copy file via ssh
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.REMOTE_HOST }}
+        username: ${{ secrets.REMOTE_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.REMOTE_PORT }}
+        source: "build/libs/demo-0.0.1-SNAPSHOT.jar"
+        target: "demo-0.0.1-SNAPSHOT.jar"
+
+    - name: restart spring project
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.REMOTE_HOST }}
@@ -18,4 +45,6 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         port: ${{ secrets.REMOTE_PORT }}
         script: |
-          echo test > /tmp/abcd
+          rm -rf /home/ubuntu/devops
+          git clone https://github.com/jimnyy/github-action.git
+          bash /home/ubuntu/github-action/deployment.sh
